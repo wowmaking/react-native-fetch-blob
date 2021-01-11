@@ -27,10 +27,10 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
-import java.nio.charset.CharsetEncoder;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -260,14 +260,18 @@ public class RNFetchBlobFS {
             }
 
             byte[] buffer = new byte[chunkSize];
+            char[] charBuffer = new char[chunkSize];
             int cursor = 0;
             boolean error = false;
 
             if (encoding.equalsIgnoreCase("utf8")) {
-                CharsetEncoder encoder = Charset.forName("UTF-8").newEncoder();
-                while ((cursor = fs.read(buffer)) != -1) {
-                    encoder.encode(ByteBuffer.wrap(buffer).asCharBuffer());
-                    String chunk = new String(buffer, 0, cursor);
+                InputStreamReader in = new InputStreamReader(fs, "UTF8");
+                StringBuilder out = new StringBuilder();
+                while ((cursor = in.read(charBuffer)) != -1) {
+                    out.delete(0, out.length());
+                    out.append(charBuffer, 0, cursor);
+                    String chunk = out.toString();
+                    
                     emitStreamEvent(streamId, "data", chunk);
                     if(tick > 0)
                         SystemClock.sleep(tick);
